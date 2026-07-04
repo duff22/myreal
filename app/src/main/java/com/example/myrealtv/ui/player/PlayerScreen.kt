@@ -120,6 +120,18 @@ fun PlayerScreen(
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_READY) {
                     totalDuration = exoPlayer.duration
+                } else if (state == Player.STATE_ENDED) {
+                    scope.launch {
+                        syncPlaybackState(
+                            userId = userId,
+                            streamId = streamId,
+                            currentPos = exoPlayer.duration,
+                            duration = exoPlayer.duration,
+                            isSeries = isSeries,
+                            seriesId = seriesId,
+                            episodeNum = episodeNum
+                        )
+                    }
                 }
             }
         }
@@ -129,7 +141,8 @@ fun PlayerScreen(
             val duration = exoPlayer.duration
             exoPlayer.release()
             
-            scope.launch {
+            // Run blocking to guarantee DB write completes before screen transition
+            kotlinx.coroutines.runBlocking {
                 syncPlaybackState(
                     userId = userId,
                     streamId = streamId,
