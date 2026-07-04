@@ -1,0 +1,10 @@
+{
+  "rows": [
+    {
+      "id": "test_row",
+      "title": "Local Mock Test Row",
+      "type": "movie",
+      "listUrl": "https://sync.myreal.cc/mock-list.json"
+    }
+  ]
+}
