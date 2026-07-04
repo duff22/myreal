@@ -12,8 +12,8 @@ android {
         applicationId = "com.myrealtv.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 13
+        versionName = "1.2.13"
     }
 
     buildTypes {
