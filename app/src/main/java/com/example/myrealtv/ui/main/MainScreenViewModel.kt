@@ -74,7 +74,7 @@ class MainScreenViewModel : ViewModel() {
     }
 
     companion object {
-        private val YEAR_REGEX = Regex("\\b(19|20)\\d{2}\\b")
+        private val YEAR_REGEX = Regex("(?<!\\d)(19|20)\\d{2}(?!\\d)")
     }
 
     init {
@@ -87,7 +87,7 @@ class MainScreenViewModel : ViewModel() {
         s = s.replace(Regex("\\b(4k|1080p|720p|hdtv|bluray|x264|x265|hevc|web-dl|webrip|uhd)\\b"), "")
         s = s.replace(Regex("\\b(s\\d+(e\\d+)?|season\\s*\\d+|ep\\s*\\d+|episode\\s*\\d+)\\b"), "")
         s = s.replace(Regex("\\b(dual|audio|multi|subbed|dubbed|sub|dub|hindi|english|french|spanish)\\b"), "")
-        s = s.replace(Regex("\\b(19|20)\\d{2}\\b"), "")
+        s = s.replace(Regex("(?<!\\d)(19|20)\\d{2}(?!\\d)"), "")
         s = s.replace(Regex("[^a-z0-9\\s]"), "")
         s = s.replace(Regex("\\s+"), " ")
         return s.trim()
