@@ -18,6 +18,7 @@ import java.io.File
 object AppUpdater {
     private var downloadId: Long = -1L
     private var downloadReceiver: BroadcastReceiver? = null
+    private var targetVersionName: String = ""
 
     data class UpdateResult(
         val isUpdateAvailable: Boolean,
@@ -68,15 +69,21 @@ object AppUpdater {
         return latestParts.size > currentParts.size
     }
 
-    fun startDownload(context: Context, url: String) {
+    fun startDownload(context: Context, url: String, latestVersion: String) {
         val appContext = context.applicationContext
-        
-        // Clean up previous update files in public downloads first
+        targetVersionName = latestVersion.trim().removePrefix("v")
+        val filename = "myrealtv-update-$targetVersionName.apk"
+
+        // Clean up any legacy update files in public downloads first
         try {
             val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            val oldFile = File(downloadDir, "myrealtv-update.apk")
-            if (oldFile.exists()) {
-                oldFile.delete()
+            val files = downloadDir.listFiles()
+            if (files != null) {
+                for (file in files) {
+                    if (file.name.startsWith("myrealtv-update-") && file.name.endsWith(".apk")) {
+                        file.delete()
+                    }
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -84,9 +91,9 @@ object AppUpdater {
 
         val request = DownloadManager.Request(Uri.parse(url)).apply {
             setTitle("MyRealTV Update")
-            setDescription("Downloading latest update...")
+            setDescription("Downloading version $latestVersion...")
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "myrealtv-update.apk")
+            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
             setMimeType("application/vnd.android.package-archive")
         }
 
@@ -135,7 +142,8 @@ object AppUpdater {
 
     private fun installApk(context: Context) {
         val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val apkFile = File(downloadDir, "myrealtv-update.apk")
+        val filename = "myrealtv-update-$targetVersionName.apk"
+        val apkFile = File(downloadDir, filename)
         
         if (!apkFile.exists()) {
             Toast.makeText(context, "Update file not found.", Toast.LENGTH_LONG).show()

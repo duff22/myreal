@@ -303,7 +303,7 @@ fun MainScreen(
                     Button(
                         onClick = {
                             showUpdateDialog = false
-                            com.example.myrealtv.updater.AppUpdater.startDownload(context, updateDownloadUrl!!)
+                            com.example.myrealtv.updater.AppUpdater.startDownload(context, updateDownloadUrl!!, latestVersionName)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00D2FF)),
                         interactionSource = confirmInteraction,
