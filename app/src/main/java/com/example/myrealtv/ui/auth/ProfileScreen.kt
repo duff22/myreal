@@ -50,6 +50,15 @@ fun ProfileScreen(
     // Query profiles from database on load
     LaunchedEffect(householdId) {
         profiles = ServiceLocator.database.userProfileDao().getProfilesForHousehold(householdId)
+        try {
+            val remoteProfiles = ServiceLocator.syncApi.getProfiles(householdId)
+            for (p in remoteProfiles) {
+                ServiceLocator.database.userProfileDao().insertProfile(p)
+            }
+            profiles = ServiceLocator.database.userProfileDao().getProfilesForHousehold(householdId)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     Box(
@@ -114,6 +123,11 @@ fun ProfileScreen(
                             scope.launch {
                                 val newProfile = UserProfile(householdId, name)
                                 ServiceLocator.database.userProfileDao().insertProfile(newProfile)
+                                try {
+                                    ServiceLocator.syncApi.syncProfile(newProfile)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
                                 profiles = ServiceLocator.database.userProfileDao().getProfilesForHousehold(householdId)
                                 showAddDialog = false
                                 newProfileName = ""

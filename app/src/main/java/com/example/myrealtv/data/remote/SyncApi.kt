@@ -2,9 +2,11 @@ package com.example.myrealtv.data.remote
 
 import com.example.myrealtv.data.local.PlaybackHistory
 import com.example.myrealtv.data.local.WatchedState
+import com.example.myrealtv.data.local.UserProfile
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.DELETE
 import retrofit2.http.Query
 
 interface SyncApi {
@@ -19,6 +21,18 @@ interface SyncApi {
 
     @GET("api/sync/watched_states")
     suspend fun getWatchedStates(@Query("userId") userId: String): List<WatchedState>
+
+    @POST("api/sync/profiles")
+    suspend fun syncProfile(@Body profile: UserProfile): SyncResponse
+
+    @GET("api/sync/profiles")
+    suspend fun getProfiles(@Query("householdId") householdId: String): List<UserProfile>
+
+    @DELETE("api/sync/profiles")
+    suspend fun deleteProfile(
+        @Query("householdId") householdId: String,
+        @Query("profileName") profileName: String
+    ): SyncResponse
 }
 
 data class SyncResponse(

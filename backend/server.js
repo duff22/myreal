@@ -62,6 +62,16 @@ function initDatabase() {
         PRIMARY KEY (userId, itemId)
       )
     `);
+
+    // UserProfiles table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS user_profiles (
+        householdId TEXT,
+        profileName TEXT,
+        createdAt INTEGER,
+        PRIMARY KEY (householdId, profileName)
+      )
+    `);
   });
 }
 
@@ -155,6 +165,60 @@ app.get('/api/sync/watched_states', (req, res) => {
       status: r.status === 1
     }));
     res.json(formattedRows);
+  });
+});
+
+// Sync Profiles (POST)
+app.post('/api/sync/profiles', (req, res) => {
+  const { householdId, profileName, createdAt } = req.body;
+  if (!householdId || !profileName) {
+    return res.status(400).json({ error: 'householdId and profileName are required' });
+  }
+
+  const sql = `
+    INSERT INTO user_profiles (householdId, profileName, createdAt)
+    VALUES (?, ?, ?)
+    ON CONFLICT(householdId, profileName) DO NOTHING
+  `;
+
+  db.run(sql, [householdId, profileName, createdAt || Date.now()], function(err) {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ success: true, message: 'Profile saved' });
+  });
+});
+
+// Get Profiles (GET)
+app.get('/api/sync/profiles', (req, res) => {
+  const { householdId } = req.query;
+  if (!householdId) {
+    return res.status(400).json({ error: 'householdId query parameter is required' });
+  }
+
+  const sql = `SELECT * FROM user_profiles WHERE householdId = ?`;
+  db.all(sql, [householdId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);
+  });
+});
+
+// Delete Profile (DELETE)
+app.delete('/api/sync/profiles', (req, res) => {
+  const { householdId, profileName } = req.query;
+  if (!householdId || !profileName) {
+    return res.status(400).json({ error: 'householdId and profileName query parameters are required' });
+  }
+
+  const sql = `DELETE FROM user_profiles WHERE householdId = ? AND profileName = ?`;
+  db.run(sql, [householdId, profileName], function(err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ success: true, message: 'Profile deleted' });
   });
 });
 

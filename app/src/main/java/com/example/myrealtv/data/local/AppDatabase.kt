@@ -79,7 +79,7 @@ interface FavoriteDao {
     suspend fun getFavorite(userId: String, itemId: String): Favorite?
 }
 
-@Database(entities = [PlaybackHistory::class, WatchedState::class, UserProfile::class, HomeCatalogCache::class, Favorite::class], version = 5, exportSchema = false)
+@Database(entities = [PlaybackHistory::class, WatchedState::class, UserProfile::class, HomeCatalogCache::class, Favorite::class], version = 6, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun playbackHistoryDao(): PlaybackHistoryDao
     abstract fun watchedStateDao(): WatchedStateDao
