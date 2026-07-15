@@ -212,6 +212,16 @@ class MainScreenViewModel : ViewModel() {
                 e.printStackTrace()
             }
 
+            // Sync remote playback history from VPS
+            try {
+                val remoteHistory = ServiceLocator.syncApi.getPlaybackHistory(userId)
+                for (history in remoteHistory) {
+                    ServiceLocator.database.playbackHistoryDao().insert(history)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             // 2. Perform background loading and catalog synchronization
             try {
                 // Fetch Remote Config Rows

@@ -35,6 +35,7 @@ import coil.compose.AsyncImage
 import com.example.myrealtv.Player
 import com.example.myrealtv.data.ServiceLocator
 import com.example.myrealtv.ui.theme.tvFocusHighlight
+import com.example.myrealtv.ui.theme.tvDpadClickable
 
 // Data structure to hold active resume dialog metadata
 private data class ResumeDialogData(
@@ -858,9 +859,8 @@ private fun SeriesSuccessContent(
                                     }
                                     .width(220.dp)
                                     .height(165.dp)
-                                    .combinedClickable(
+                                    .tvDpadClickable(
                                         interactionSource = interactionSource,
-                                        indication = null,
                                         onClick = { onEpisodeClick(episode, playUrl) },
                                         onLongClick = { onToggleEpisodeWatched(episode.streamId, episode.episodeNum) }
                                     )

@@ -9,10 +9,13 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -61,4 +64,46 @@ fun Modifier.tvFocusable(
             scaleAmount = scaleAmount
         )
         .focusable(interactionSource = interactionSource)
+}
+
+@Composable
+fun Modifier.tvDpadClickable(
+    interactionSource: MutableInteractionSource,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+): Modifier {
+    var dpadPressed by remember { mutableStateOf(false) }
+    var dpadPressTime by remember { mutableStateOf(0L) }
+    var hasTriggeredLongClick by remember { mutableStateOf(false) }
+    
+    return this.onKeyEvent { keyEvent ->
+        val nativeEvent = keyEvent.nativeKeyEvent
+        val keyCode = nativeEvent.keyCode
+        val isDpadCenter = keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER || keyCode == android.view.KeyEvent.KEYCODE_ENTER
+        
+        if (isDpadCenter) {
+            if (nativeEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                if (!dpadPressed) {
+                    dpadPressed = true
+                    dpadPressTime = System.currentTimeMillis()
+                    hasTriggeredLongClick = false
+                } else {
+                    val elapsed = System.currentTimeMillis() - dpadPressTime
+                    if (elapsed >= 600 && !hasTriggeredLongClick) {
+                        hasTriggeredLongClick = true
+                        onLongClick()
+                    }
+                }
+            } else if (nativeEvent.action == android.view.KeyEvent.ACTION_UP) {
+                dpadPressed = false
+                if (!hasTriggeredLongClick) {
+                    onClick()
+                }
+                hasTriggeredLongClick = false
+            }
+            true
+        } else {
+            false
+        }
+    }.focusable(interactionSource = interactionSource)
 }
