@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.example.myrealtv.data.local.AppDatabase
 import com.example.myrealtv.data.remote.ConfigApi
+import com.example.myrealtv.data.remote.GithubApi
 import com.example.myrealtv.data.remote.SyncApi
 import com.example.myrealtv.data.remote.XtreamApi
 import okhttp3.OkHttpClient
@@ -81,6 +82,15 @@ object ServiceLocator {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ConfigApi::class.java)
+    }
+
+    val githubApi: GithubApi by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://api.github.com/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GithubApi::class.java)
     }
 
     val mdbListApi: com.example.myrealtv.data.remote.MdbListApi by lazy {

@@ -37,6 +37,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.focusable
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -63,6 +65,20 @@ fun MainScreen(
     }
     
     var showDismissDialogItem by remember { mutableStateOf<ContinueWatchingItem?>(null) }
+    
+    val context = LocalContext.current
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var updateDownloadUrl by remember { mutableStateOf<String?>(null) }
+    var latestVersionName by remember { mutableStateOf("") }
+    
+    LaunchedEffect(Unit) {
+        val updateResult = com.example.myrealtv.updater.AppUpdater.checkForUpdate(context)
+        if (updateResult.isUpdateAvailable && updateResult.downloadUrl != null) {
+            updateDownloadUrl = updateResult.downloadUrl
+            latestVersionName = updateResult.latestVersion
+            showUpdateDialog = true
+        }
+    }
     
     Box(
         modifier = Modifier
@@ -268,6 +284,48 @@ fun MainScreen(
                 },
                 title = { Text("Remove from Continue Watching?", color = Color.White) },
                 text = { Text("Are you sure you want to dismiss ${continueItem.item.title}?", color = Color.White.copy(alpha = 0.7f)) },
+                containerColor = Color(0xFF1E293B)
+            )
+        }
+
+        if (showUpdateDialog && updateDownloadUrl != null) {
+            AlertDialog(
+                onDismissRequest = { showUpdateDialog = false },
+                title = { Text("Update Available", color = Color.White, fontWeight = FontWeight.Bold) },
+                text = {
+                    Text(
+                        text = "A new version of MyRealTV ($latestVersionName) is available. Would you like to update now?",
+                        color = Color.LightGray
+                    )
+                },
+                confirmButton = {
+                    val confirmInteraction = remember { MutableInteractionSource() }
+                    Button(
+                        onClick = {
+                            showUpdateDialog = false
+                            com.example.myrealtv.updater.AppUpdater.startDownload(context, updateDownloadUrl!!)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00D2FF)),
+                        interactionSource = confirmInteraction,
+                        modifier = Modifier
+                            .tvFocusHighlight(confirmInteraction, RoundedCornerShape(8.dp))
+                            .focusable(interactionSource = confirmInteraction)
+                    ) {
+                        Text("Update Now", color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    val dismissInteraction = remember { MutableInteractionSource() }
+                    TextButton(
+                        onClick = { showUpdateDialog = false },
+                        interactionSource = dismissInteraction,
+                        modifier = Modifier
+                            .tvFocusHighlight(dismissInteraction, RoundedCornerShape(8.dp))
+                            .focusable(interactionSource = dismissInteraction)
+                    ) {
+                        Text("Later", color = Color.White)
+                    }
+                },
                 containerColor = Color(0xFF1E293B)
             )
         }
