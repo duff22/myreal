@@ -122,27 +122,26 @@ fun ContentDetailsScreen(
             is ContentDetailsUiState.MovieSuccess -> {
                 MovieSuccessContent(
                     uiState = uiState,
-                    onPlayClick = {
-                        val hasHistory = uiState.watchHistory != null && uiState.watchHistory.lastPosition > 0
-                        if (hasHistory) {
-                            showResumeDialogItem = ResumeDialogData(
-                                title = uiState.title,
+                    onResumePlay = {
+                        onItemClick(
+                            Player(
                                 streamId = uiState.streamId,
-                                playUrl = uiState.playUrl,
-                                lastPosition = uiState.watchHistory!!.lastPosition,
-                                totalDuration = uiState.watchHistory.totalDuration,
+                                streamUrl = uiState.playUrl,
+                                title = uiState.title,
                                 isSeries = false
                             )
-                        } else {
-                            onItemClick(
-                                Player(
-                                    streamId = uiState.streamId,
-                                    streamUrl = uiState.playUrl,
-                                    title = uiState.title,
-                                    isSeries = false
-                                )
+                        )
+                    },
+                    onStartPlay = {
+                        viewModel.clearWatchHistory(uiState.streamId)
+                        onItemClick(
+                            Player(
+                                streamId = uiState.streamId,
+                                streamUrl = uiState.playUrl,
+                                title = uiState.title,
+                                isSeries = false
                             )
-                        }
+                        )
                     },
                     onClearHistory = { viewModel.clearWatchHistory(uiState.streamId) },
                     onToggleWatched = { viewModel.toggleMovieWatched(uiState.streamId) },
@@ -283,7 +282,8 @@ private fun cleanEpisodeTitle(rawTitle: String?, episodeNum: Int): String {
 @Composable
 private fun MovieSuccessContent(
     uiState: ContentDetailsUiState.MovieSuccess,
-    onPlayClick: () -> Unit,
+    onResumePlay: () -> Unit,
+    onStartPlay: () -> Unit,
     onClearHistory: () -> Unit,
     onToggleWatched: () -> Unit,
     onBack: () -> Unit
@@ -447,19 +447,40 @@ private fun MovieSuccessContent(
                     ) {
                         val hasHistory = uiState.watchHistory != null && uiState.watchHistory.lastPosition > 0
                         
-                        // Play/Resume Button
-                        val playInteraction = remember { MutableInteractionSource() }
-                        Button(
-                            onClick = onPlayClick,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-                            interactionSource = playInteraction,
-                            modifier = Modifier.tvFocusHighlight(playInteraction, RoundedCornerShape(8.dp))
-                        ) {
-                            if (hasHistory) {
-                                val progress = formatPosition(uiState.watchHistory!!.lastPosition)
-                                val duration = formatPosition(uiState.watchHistory.totalDuration)
-                                Text("Resume ($progress / $duration)")
-                            } else {
+                        if (hasHistory) {
+                            val progress = formatPosition(uiState.watchHistory!!.lastPosition)
+                            val duration = formatPosition(uiState.watchHistory.totalDuration)
+                            
+                            // Resume Button
+                            val resumeInteraction = remember { MutableInteractionSource() }
+                            Button(
+                                onClick = onResumePlay,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                                interactionSource = resumeInteraction,
+                                modifier = Modifier.tvFocusHighlight(resumeInteraction, RoundedCornerShape(8.dp))
+                            ) {
+                                Text("Continue Watching from $progress / $duration")
+                            }
+
+                            // Start Over Button
+                            val startInteraction = remember { MutableInteractionSource() }
+                            Button(
+                                onClick = onStartPlay,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                                interactionSource = startInteraction,
+                                modifier = Modifier.tvFocusHighlight(startInteraction, RoundedCornerShape(8.dp))
+                            ) {
+                                Text("Play from Beginning")
+                            }
+                        } else {
+                            // Standard Play Button
+                            val playInteraction = remember { MutableInteractionSource() }
+                            Button(
+                                onClick = onStartPlay,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                                interactionSource = playInteraction,
+                                modifier = Modifier.tvFocusHighlight(playInteraction, RoundedCornerShape(8.dp))
+                            ) {
                                 Text("Play")
                             }
                         }
@@ -495,10 +516,53 @@ private fun SeriesSuccessContent(
     onToggleEpisodeWatched: (String, Int) -> Unit,
     onBack: () -> Unit
 ) {
-    val targetSeasonKey = remember(uiState.seasons, uiState.episodes, nextEpisodeId) {
+    // Sort all episodes sequentially
+    val allEpisodes = remember(uiState.episodes) {
+        uiState.episodes.flatMap { (seasonKey, list) ->
+            list.map { Pair(it, seasonKey) }
+        }.sortedWith(
+            compareBy<Pair<XcEpisode, String>> { it.second.toIntOrNull() ?: 1 }
+                .thenBy { it.first.episodeNum }
+        )
+    }
+
+    val resolvedTargetEpId = remember(allEpisodes, nextEpisodeId, uiState.episodeHistory, uiState.watchedStates) {
         if (!nextEpisodeId.isNullOrBlank()) {
+            nextEpisodeId
+        } else {
+            // Find partially watched episode first
+            val partiallyWatched = allEpisodes.find { (ep, _) ->
+                val epHistory = uiState.episodeHistory[ep.streamId]
+                val progress = if (epHistory != null && epHistory.totalDuration > 0) {
+                    epHistory.lastPosition.toFloat() / epHistory.totalDuration.toFloat()
+                } else 0f
+                progress > 0f && progress < 0.92f
+            }
+            if (partiallyWatched != null) {
+                partiallyWatched.first.streamId
+            } else {
+                // Find last watched episode
+                val lastWatchedIndex = allEpisodes.indexOfLast { (ep, _) ->
+                    val epHistory = uiState.episodeHistory[ep.streamId]
+                    val progress = if (epHistory != null && epHistory.totalDuration > 0) {
+                        epHistory.lastPosition.toFloat() / epHistory.totalDuration.toFloat()
+                    } else 0f
+                    uiState.watchedStates["episode_${ep.streamId}"] == true || progress >= 0.92f
+                }
+                val targetIndex = lastWatchedIndex + 1
+                if (targetIndex < allEpisodes.size && lastWatchedIndex >= 0) {
+                    allEpisodes[targetIndex].first.streamId
+                } else {
+                    allEpisodes.firstOrNull()?.first?.streamId
+                }
+            }
+        }
+    }
+
+    val targetSeasonKey = remember(uiState.episodes, resolvedTargetEpId) {
+        if (!resolvedTargetEpId.isNullOrBlank()) {
             uiState.episodes.entries.find { (_, list) ->
-                list.any { it.streamId == nextEpisodeId }
+                list.any { it.streamId == resolvedTargetEpId }
             }?.key
         } else null
     }
@@ -760,7 +824,7 @@ private fun SeriesSuccessContent(
                             val isEpWatched = uiState.watchedStates["episode_${episode.streamId}"] == true || progressPercent >= 0.92f
 
                             val focusRequester = remember { FocusRequester() }
-                            val isTargetEp = episode.streamId == nextEpisodeId
+                            val isTargetEp = episode.streamId == resolvedTargetEpId
 
                             LaunchedEffect(isTargetEp) {
                                 if (isTargetEp) {

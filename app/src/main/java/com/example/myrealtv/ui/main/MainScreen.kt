@@ -65,33 +65,6 @@ fun MainScreen(
     }
     
     var showDismissDialogItem by remember { mutableStateOf<ContinueWatchingItem?>(null) }
-    var showResumeDialogItem by remember { mutableStateOf<ResumeDialogData?>(null) }
-    
-    val onPlayDirectly: (ResolvedItem, Int, Int) -> Unit = { item, lastPos, totalDur ->
-        if (lastPos > 0) {
-            showResumeDialogItem = ResumeDialogData(
-                title = item.title,
-                streamId = item.id,
-                playUrl = item.url,
-                lastPosition = lastPos,
-                totalDuration = totalDur,
-                isSeries = item.type == "series",
-                seriesId = item.seriesId,
-                episodeNum = item.episodeNum
-            )
-        } else {
-            onItemClick(
-                Player(
-                    streamId = item.id,
-                    streamUrl = item.url,
-                    title = item.title,
-                    isSeries = item.type == "series",
-                    seriesId = item.seriesId,
-                    episodeNum = item.episodeNum
-                )
-            )
-        }
-    }
     
     val context = LocalContext.current
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -198,7 +171,6 @@ fun MainScreen(
                     val continueWatching = uiState.continueWatching
                     val nextUp = uiState.nextUp
                     val watchedStates = uiState.watchedStates
-                    
                     when (selectedTab) {
                         0 -> HomeScreen(
                             configRows = configRows,
@@ -216,7 +188,6 @@ fun MainScreen(
                                     )
                                 )
                             },
-                            onPlayDirectly = onPlayDirectly,
                             onLongClickContinueWatching = { item ->
                                 showDismissDialogItem = item
                             },
@@ -237,7 +208,6 @@ fun MainScreen(
                                     )
                                 )
                             },
-                            onPlayDirectly = { _, _, _ -> },
                             onLongClickContinueWatching = {},
                             onToggleWatched = { item ->
                                 viewModel.toggleWatchedState(item.id, false)
@@ -256,7 +226,6 @@ fun MainScreen(
                                     )
                                 )
                             },
-                            onPlayDirectly = { _, _, _ -> },
                             onLongClickContinueWatching = {},
                             onToggleWatched = { item ->
                                 viewModel.toggleWatchedState(item.id, true)
@@ -362,74 +331,6 @@ fun MainScreen(
             )
         }
 
-        if (showResumeDialogItem != null) {
-            val dialogData = showResumeDialogItem!!
-            val progressStr = formatPosition(dialogData.lastPosition)
-            val durationStr = formatPosition(dialogData.totalDuration)
-
-            AlertDialog(
-                onDismissRequest = { showResumeDialogItem = null },
-                title = { Text("Resume Playback?", color = Color.White, fontWeight = FontWeight.Bold) },
-                text = {
-                    Text(
-                        "Would you like to resume from $progressStr / $durationStr or start from the beginning?",
-                        color = Color.LightGray
-                    )
-                },
-                confirmButton = {
-                    val resumeInteraction = remember { MutableInteractionSource() }
-                    Button(
-                        onClick = {
-                            showResumeDialogItem = null
-                            onItemClick(
-                                Player(
-                                    streamId = dialogData.streamId,
-                                    streamUrl = dialogData.playUrl,
-                                    title = dialogData.title,
-                                    isSeries = dialogData.isSeries,
-                                    seriesId = dialogData.seriesId,
-                                    episodeNum = dialogData.episodeNum
-                                )
-                            )
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-                        interactionSource = resumeInteraction,
-                        modifier = Modifier
-                            .tvFocusHighlight(resumeInteraction, RoundedCornerShape(8.dp))
-                            .focusable(interactionSource = resumeInteraction)
-                    ) {
-                        Text("Resume")
-                    }
-                },
-                dismissButton = {
-                    val startInteraction = remember { MutableInteractionSource() }
-                    Button(
-                        onClick = {
-                            showResumeDialogItem = null
-                            viewModel.dismissContinueWatching(dialogData.streamId)
-                            onItemClick(
-                                Player(
-                                    streamId = dialogData.streamId,
-                                    streamUrl = dialogData.playUrl,
-                                    title = dialogData.title,
-                                    isSeries = dialogData.isSeries,
-                                    seriesId = dialogData.seriesId,
-                                    episodeNum = dialogData.episodeNum
-                                )
-                            )
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                        interactionSource = startInteraction,
-                        modifier = Modifier
-                            .tvFocusHighlight(startInteraction, RoundedCornerShape(8.dp))
-                            .focusable(interactionSource = startInteraction)
-                    ) {
-                        Text("Play from Start")
-                    }
-                },
-                containerColor = Color(0xFF1E293B)
-            )
-        }
     }
 }
 
@@ -471,7 +372,6 @@ fun HomeScreen(
     nextUp: List<ResolvedItem>,
     watchedStates: Map<String, Boolean>,
     onPlayItem: (ResolvedItem) -> Unit,
-    onPlayDirectly: (ResolvedItem, Int, Int) -> Unit,
     onLongClickContinueWatching: (ContinueWatchingItem) -> Unit,
     onToggleWatched: (ResolvedItem) -> Unit
 ) {
@@ -494,7 +394,7 @@ fun HomeScreen(
                     items(continueWatching) { continueItem ->
                         ContinueWatchingCard(
                             continueItem = continueItem,
-                            onPlay = { onPlayDirectly(continueItem.item, continueItem.history.lastPosition, continueItem.history.totalDuration) },
+                            onPlay = { onPlayItem(continueItem.item) },
                             onLongClick = { onLongClickContinueWatching(continueItem) }
                         )
                     }
@@ -524,7 +424,7 @@ fun HomeScreen(
                             item = item,
                             isWatched = isWatched,
                             progress = item.progress,
-                            onClick = { onPlayDirectly(item, item.lastPosition ?: 0, item.totalDuration ?: 0) },
+                            onClick = { onPlayItem(item) },
                             onLongClick = { onToggleWatched(item) }
                         )
                     }
