@@ -70,9 +70,11 @@ fun MainScreen(
     var showUpdateDialog by remember { mutableStateOf(false) }
     var updateDownloadUrl by remember { mutableStateOf<String?>(null) }
     var latestVersionName by remember { mutableStateOf("") }
+    var currentVersionName by remember { mutableStateOf("") }
     
     LaunchedEffect(Unit) {
         val updateResult = com.example.myrealtv.updater.AppUpdater.checkForUpdate(context)
+        currentVersionName = com.example.myrealtv.updater.AppUpdater.getCurrentVersionName(context)
         if (updateResult.isUpdateAvailable && updateResult.downloadUrl != null) {
             updateDownloadUrl = updateResult.downloadUrl
             latestVersionName = updateResult.latestVersion
@@ -294,7 +296,7 @@ fun MainScreen(
                 title = { Text("Update Available", color = Color.White, fontWeight = FontWeight.Bold) },
                 text = {
                     Text(
-                        text = "A new version of MyRealTV ($latestVersionName) is available. Would you like to update now?",
+                        text = "A new version ($latestVersionName) is available. You are running version $currentVersionName. Would you like to update now?",
                         color = Color.LightGray
                     )
                 },
