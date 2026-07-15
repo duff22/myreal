@@ -261,12 +261,13 @@ class MainScreenViewModel : ViewModel() {
                             if (sanitizedType == "movie") {
                                 val matched = preprocessedMovies.find { prep ->
                                     val titleMatches = prep.cleanName == cleanMdbTitle
+                                    val itemYear = item.itemYear
                                     if (titleMatches) {
-                                        if (item.year != null) {
+                                        if (itemYear != null) {
                                             if (prep.year != null) {
-                                                prep.year == item.year
+                                                prep.year == itemYear
                                             } else {
-                                                item.year < 2024
+                                                itemYear < 2024
                                             }
                                         } else {
                                             true
@@ -292,12 +293,13 @@ class MainScreenViewModel : ViewModel() {
                             } else if (sanitizedType == "series") {
                                 val matched = preprocessedSeries.find { prep ->
                                     val titleMatches = prep.cleanName == cleanMdbTitle
+                                    val itemYear = item.itemYear
                                     if (titleMatches) {
-                                        if (item.year != null) {
+                                        if (itemYear != null) {
                                             if (prep.year != null) {
-                                                prep.year == item.year
+                                                prep.year == itemYear
                                             } else {
-                                                item.year < 2024
+                                                itemYear < 2024
                                             }
                                         } else {
                                             true

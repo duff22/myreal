@@ -27,10 +27,14 @@ data class MdbItem(
     val type: String? = null, // "movie" or "show"
     val mediatype: String? = null,
     val year: Int? = null,
+    val release_year: Int? = null,
     val imdb_id: String? = null
 ) {
     val mediaType: String
         get() = type ?: mediatype ?: "movie"
+        
+    val itemYear: Int?
+        get() = year ?: release_year
 }
 
 interface MdbListApi {
