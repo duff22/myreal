@@ -64,12 +64,28 @@ interface HomeCatalogCacheDao {
     suspend fun clearCache(householdId: String)
 }
 
-@Database(entities = [PlaybackHistory::class, WatchedState::class, UserProfile::class, HomeCatalogCache::class], version = 4, exportSchema = false)
+@Dao
+interface FavoriteDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(favorite: Favorite)
+
+    @Query("DELETE FROM favorites WHERE userId = :userId AND itemId = :itemId")
+    suspend fun delete(userId: String, itemId: String)
+
+    @Query("SELECT * FROM favorites WHERE userId = :userId ORDER BY createdAt DESC")
+    suspend fun getFavorites(userId: String): List<Favorite>
+
+    @Query("SELECT * FROM favorites WHERE userId = :userId AND itemId = :itemId LIMIT 1")
+    suspend fun getFavorite(userId: String, itemId: String): Favorite?
+}
+
+@Database(entities = [PlaybackHistory::class, WatchedState::class, UserProfile::class, HomeCatalogCache::class, Favorite::class], version = 5, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun playbackHistoryDao(): PlaybackHistoryDao
     abstract fun watchedStateDao(): WatchedStateDao
     abstract fun userProfileDao(): UserProfileDao
     abstract fun homeCatalogCacheDao(): HomeCatalogCacheDao
+    abstract fun favoriteDao(): FavoriteDao
 
     companion object {
         @Volatile

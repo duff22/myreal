@@ -171,12 +171,16 @@ fun MainScreen(
                     val continueWatching = uiState.continueWatching
                     val nextUp = uiState.nextUp
                     val watchedStates = uiState.watchedStates
+                    val favoriteMovies = uiState.favoriteMovies
+                    val favoriteShows = uiState.favoriteShows
                     when (selectedTab) {
                         0 -> HomeScreen(
                             configRows = configRows,
                             continueWatching = continueWatching,
                             nextUp = nextUp,
                             watchedStates = watchedStates,
+                            favoriteMovies = favoriteMovies,
+                            favoriteShows = favoriteShows,
                             onPlayItem = { item ->
                                 val targetItemId = if (item.type == "series") (item.seriesId ?: item.id) else item.id
                                 val nextEpId = if (item.type == "series" && item.seriesId != null && item.seriesId != item.id) item.id else null
@@ -200,6 +204,8 @@ fun MainScreen(
                             continueWatching = emptyList(),
                             nextUp = emptyList(),
                             watchedStates = watchedStates,
+                            favoriteMovies = emptyList(),
+                            favoriteShows = emptyList(),
                             onPlayItem = { item ->
                                 onItemClick(
                                     ContentDetails(
@@ -218,6 +224,8 @@ fun MainScreen(
                             continueWatching = emptyList(),
                             nextUp = emptyList(),
                             watchedStates = watchedStates,
+                            favoriteMovies = emptyList(),
+                            favoriteShows = emptyList(),
                             onPlayItem = { item ->
                                 onItemClick(
                                     ContentDetails(
@@ -371,6 +379,8 @@ fun HomeScreen(
     continueWatching: List<ContinueWatchingItem>,
     nextUp: List<ResolvedItem>,
     watchedStates: Map<String, Boolean>,
+    favoriteMovies: List<ResolvedItem>,
+    favoriteShows: List<ResolvedItem>,
     onPlayItem: (ResolvedItem) -> Unit,
     onLongClickContinueWatching: (ContinueWatchingItem) -> Unit,
     onToggleWatched: (ResolvedItem) -> Unit
@@ -455,6 +465,56 @@ fun HomeScreen(
                         onClick = { onPlayItem(item) },
                         onLongClick = { onToggleWatched(item) }
                     )
+                }
+            }
+        }
+
+        if (favoriteMovies.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Favorited Movies",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(favoriteMovies) { item ->
+                        val isWatched = watchedStates["movie_${item.id}"] == true
+                        MovieCard(
+                            item = item,
+                            isWatched = isWatched,
+                            onClick = { onPlayItem(item) },
+                            onLongClick = { onToggleWatched(item) }
+                        )
+                    }
+                }
+            }
+        }
+
+        if (favoriteShows.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Favorited TV Shows",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(favoriteShows) { item ->
+                        val isWatched = watchedStates["series_${item.id}"] == true
+                        MovieCard(
+                            item = item,
+                            isWatched = isWatched,
+                            onClick = { onPlayItem(item) },
+                            onLongClick = { onToggleWatched(item) }
+                        )
+                    }
                 }
             }
         }

@@ -145,6 +145,7 @@ fun ContentDetailsScreen(
                     },
                     onClearHistory = { viewModel.clearWatchHistory(uiState.streamId) },
                     onToggleWatched = { viewModel.toggleMovieWatched(uiState.streamId) },
+                    onToggleFavorite = { viewModel.toggleFavorite() },
                     onBack = onBack
                 )
             }
@@ -160,7 +161,7 @@ fun ContentDetailsScreen(
                                 title = "${uiState.title} - ${episode.title ?: "Episode ${episode.episodeNum}"}",
                                 streamId = episode.streamId,
                                 playUrl = url,
-                                lastPosition = epHistory!!.lastPosition,
+                                lastPosition = epHistory.lastPosition,
                                 totalDuration = epHistory.totalDuration,
                                 isSeries = true,
                                 seriesId = uiState.seriesId,
@@ -182,6 +183,7 @@ fun ContentDetailsScreen(
                     onToggleSeriesWatched = { viewModel.toggleSeriesWatched(uiState.seriesId) },
                     onToggleSeasonWatched = { episodes -> viewModel.toggleSeasonWatched(episodes) },
                     onToggleEpisodeWatched = { streamId, episodeNum -> viewModel.toggleEpisodeWatched(streamId, episodeNum) },
+                    onToggleFavorite = { viewModel.toggleFavorite() },
                     onBack = onBack
                 )
             }
@@ -286,6 +288,7 @@ private fun MovieSuccessContent(
     onStartPlay: () -> Unit,
     onClearHistory: () -> Unit,
     onToggleWatched: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onBack: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -378,12 +381,15 @@ private fun MovieSuccessContent(
                         
                         val favInteraction = remember { MutableInteractionSource() }
                         Button(
-                            onClick = { /* Favorites functionality placeholder */ },
+                            onClick = onToggleFavorite,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0x33FFFFFF)),
                             interactionSource = favInteraction,
                             modifier = Modifier.tvFocusHighlight(favInteraction, RoundedCornerShape(8.dp))
                         ) {
-                            Text("❤️ Add to Favorites", color = Color.White)
+                            Text(
+                                text = if (uiState.isFavorited) "❤️ Remove from Favorites" else "🤍 Add to Favorites",
+                                color = Color.White
+                            )
                         }
                     }
 
@@ -514,6 +520,7 @@ private fun SeriesSuccessContent(
     onToggleSeriesWatched: () -> Unit,
     onToggleSeasonWatched: (List<XcEpisode>) -> Unit,
     onToggleEpisodeWatched: (String, Int) -> Unit,
+    onToggleFavorite: () -> Unit,
     onBack: () -> Unit
 ) {
     // Sort all episodes sequentially
@@ -660,12 +667,15 @@ private fun SeriesSuccessContent(
                         
                         val favInteraction = remember { MutableInteractionSource() }
                         Button(
-                            onClick = { /* Favorites functionality placeholder */ },
+                            onClick = onToggleFavorite,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0x33FFFFFF)),
                             interactionSource = favInteraction,
                             modifier = Modifier.tvFocusHighlight(favInteraction, RoundedCornerShape(8.dp))
                         ) {
-                            Text("❤️ Add to Favorites", color = Color.White)
+                            Text(
+                                text = if (uiState.isFavorited) "❤️ Remove from Favorites" else "🤍 Add to Favorites",
+                                color = Color.White
+                            )
                         }
                     }
 

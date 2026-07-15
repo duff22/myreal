@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.myrealtv.data.ServiceLocator
 import com.example.myrealtv.data.local.PlaybackHistory
 import com.example.myrealtv.data.local.WatchedState
+import com.example.myrealtv.data.local.Favorite
 import com.example.myrealtv.data.remote.XcEpisode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +28,8 @@ sealed interface ContentDetailsUiState {
         val playUrl: String,
         val streamId: String,
         val watchHistory: PlaybackHistory?,
-        val watchedStates: Map<String, Boolean>
+        val watchedStates: Map<String, Boolean>,
+        val isFavorited: Boolean
     ) : ContentDetailsUiState
     data class SeriesSuccess(
         val title: String,
@@ -43,7 +45,8 @@ sealed interface ContentDetailsUiState {
         val episodes: Map<String, List<XcEpisode>>,
         val episodeHistory: Map<String, PlaybackHistory>, // Maps episode streamId to PlaybackHistory
         val seriesId: String,
-        val watchedStates: Map<String, Boolean>
+        val watchedStates: Map<String, Boolean>,
+        val isFavorited: Boolean
     ) : ContentDetailsUiState
 }
 
@@ -75,6 +78,12 @@ class ContentDetailsViewModel(
                     emptyList()
                 }
                 val watchedStatesMap = watchedStatesList.associate { it.itemId to it.status }
+
+                val isFavorited = try {
+                    ServiceLocator.database.favoriteDao().getFavorite(userId, itemId) != null
+                } catch (e: Exception) {
+                    false
+                }
 
                 if (contentType == "movie") {
                     val vodResponse = ServiceLocator.xtreamApi.getVodInfo(
@@ -113,7 +122,8 @@ class ContentDetailsViewModel(
                         playUrl = playUrl,
                         streamId = itemId,
                         watchHistory = history,
-                        watchedStates = watchedStatesMap
+                        watchedStates = watchedStatesMap,
+                        isFavorited = isFavorited
                     )
                 } else if (contentType == "series") {
                     val seriesResponse = ServiceLocator.xtreamApi.getSeriesInfo(
@@ -154,7 +164,8 @@ class ContentDetailsViewModel(
                         episodes = episodesMap,
                         episodeHistory = episodeHistory,
                         seriesId = itemId,
-                        watchedStates = watchedStatesMap
+                        watchedStates = watchedStatesMap,
+                        isFavorited = isFavorited
                     )
                 } else {
                     _uiState.value = ContentDetailsUiState.Error("Unsupported content type: $contentType")
@@ -338,6 +349,41 @@ class ContentDetailsViewModel(
             }
             
             // Refresh details state to reflect changes immediately
+            loadDetails()
+        }
+    }
+
+    fun toggleFavorite() {
+        viewModelScope.launch {
+            val userId = ServiceLocator.getActiveUserId() ?: "default_user"
+            val currentState = ServiceLocator.database.favoriteDao().getFavorite(userId, itemId)
+            if (currentState != null) {
+                ServiceLocator.database.favoriteDao().delete(userId, itemId)
+            } else {
+                val ui = _uiState.value
+                val fav = when (ui) {
+                    is ContentDetailsUiState.MovieSuccess -> Favorite(
+                        userId = userId,
+                        itemId = itemId,
+                        title = ui.title,
+                        poster = ui.posterUrl,
+                        type = "movie",
+                        url = ui.playUrl
+                    )
+                    is ContentDetailsUiState.SeriesSuccess -> Favorite(
+                        userId = userId,
+                        itemId = itemId,
+                        title = ui.title,
+                        poster = ui.posterUrl,
+                        type = "series",
+                        url = ""
+                    )
+                    else -> null
+                }
+                if (fav != null) {
+                    ServiceLocator.database.favoriteDao().insert(fav)
+                }
+            }
             loadDetails()
         }
     }

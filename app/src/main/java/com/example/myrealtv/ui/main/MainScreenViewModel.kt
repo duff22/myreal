@@ -28,7 +28,9 @@ sealed interface MainScreenUiState {
         val seriesRows: List<ResolvedRow>,
         val continueWatching: List<ContinueWatchingItem>,
         val nextUp: List<ResolvedItem>,
-        val watchedStates: Map<String, Boolean>
+        val watchedStates: Map<String, Boolean>,
+        val favoriteMovies: List<ResolvedItem> = emptyList(),
+        val favoriteShows: List<ResolvedItem> = emptyList()
     ) : MainScreenUiState
 }
 
@@ -111,6 +113,31 @@ class MainScreenViewModel : ViewModel() {
             val password = ServiceLocator.getPassword()
             val baseUrl = ServiceLocator.xtreamBaseUrl
 
+            // Fetch local favorites
+            val dbFavorites = try {
+                ServiceLocator.database.favoriteDao().getFavorites(userId)
+            } catch (e: Exception) {
+                emptyList()
+            }
+            val favoriteMovies = dbFavorites.filter { it.type == "movie" }.map { fav ->
+                ResolvedItem(
+                    id = fav.itemId,
+                    title = fav.title,
+                    poster = fav.poster,
+                    url = fav.url,
+                    type = "movie"
+                )
+            }
+            val favoriteShows = dbFavorites.filter { it.type == "series" }.map { fav ->
+                ResolvedItem(
+                    id = fav.itemId,
+                    title = fav.title,
+                    poster = fav.poster,
+                    url = "",
+                    type = "series"
+                )
+            }
+
             // 1. Instantly load from local Room Cache
             var initialHomeRows = emptyList<ResolvedRow>()
             try {
@@ -158,7 +185,9 @@ class MainScreenViewModel : ViewModel() {
                 _uiState.value = current.copy(
                     continueWatching = continueWatchingList,
                     nextUp = initialNextUp,
-                    watchedStates = initialWatchedMap
+                    watchedStates = initialWatchedMap,
+                    favoriteMovies = favoriteMovies,
+                    favoriteShows = favoriteShows
                 )
             } else if (initialHomeRows.isNotEmpty()) {
                 _uiState.value = MainScreenUiState.Success(
@@ -167,7 +196,9 @@ class MainScreenViewModel : ViewModel() {
                     seriesRows = emptyList(),
                     continueWatching = continueWatchingList,
                     nextUp = initialNextUp,
-                    watchedStates = initialWatchedMap
+                    watchedStates = initialWatchedMap,
+                    favoriteMovies = favoriteMovies,
+                    favoriteShows = favoriteShows
                 )
             }
 
@@ -426,7 +457,9 @@ class MainScreenViewModel : ViewModel() {
                         seriesRows = seriesRows,
                         continueWatching = updatedContinueWatchingList,
                         nextUp = nextUpList,
-                        watchedStates = updatedWatchedMap
+                        watchedStates = updatedWatchedMap,
+                        favoriteMovies = favoriteMovies,
+                        favoriteShows = favoriteShows
                     )
                 }
 

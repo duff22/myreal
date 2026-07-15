@@ -36,3 +36,14 @@ data class HomeCatalogCache(
     val serializedRowsJson: String,
     val updatedAt: Long = System.currentTimeMillis()
 )
+
+@Entity(tableName = "favorites", primaryKeys = ["userId", "itemId"])
+data class Favorite(
+    val userId: String, // Format: [Household_ID]_[Profile_Name]
+    val itemId: String,
+    val title: String,
+    val poster: String?,
+    val type: String, // "movie" or "series"
+    val url: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
