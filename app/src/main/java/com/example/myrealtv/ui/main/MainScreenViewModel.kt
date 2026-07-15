@@ -262,8 +262,12 @@ class MainScreenViewModel : ViewModel() {
                                 val matched = preprocessedMovies.find { prep ->
                                     val titleMatches = prep.cleanName == cleanMdbTitle
                                     if (titleMatches) {
-                                        if (item.year != null && prep.year != null) {
-                                            prep.year == item.year
+                                        if (item.year != null) {
+                                            if (prep.year != null) {
+                                                prep.year == item.year
+                                            } else {
+                                                item.year < 2024
+                                            }
                                         } else {
                                             true
                                         }
@@ -289,8 +293,12 @@ class MainScreenViewModel : ViewModel() {
                                 val matched = preprocessedSeries.find { prep ->
                                     val titleMatches = prep.cleanName == cleanMdbTitle
                                     if (titleMatches) {
-                                        if (item.year != null && prep.year != null) {
-                                            prep.year == item.year
+                                        if (item.year != null) {
+                                            if (prep.year != null) {
+                                                prep.year == item.year
+                                            } else {
+                                                item.year < 2024
+                                            }
                                         } else {
                                             true
                                         }
