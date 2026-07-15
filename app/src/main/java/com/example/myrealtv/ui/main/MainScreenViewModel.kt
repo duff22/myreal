@@ -99,13 +99,12 @@ class MainScreenViewModel : ViewModel() {
     }
 
     fun loadData() {
-        if (_uiState.value is MainScreenUiState.Success) {
-            refreshLocalStates()
-            return
-        }
+        val isAlreadySuccess = _uiState.value is MainScreenUiState.Success
 
         viewModelScope.launch {
-            _uiState.value = MainScreenUiState.Loading
+            if (!isAlreadySuccess) {
+                _uiState.value = MainScreenUiState.Loading
+            }
             
             val userId = ServiceLocator.getActiveUserId() ?: "default_user"
             val username = ServiceLocator.getHouseholdId() ?: ""
@@ -154,7 +153,14 @@ class MainScreenViewModel : ViewModel() {
 
             val initialNextUp = calculateNextUp(userId, localHistory, initialWatchedMap, baseUrl, username, password)
 
-            if (initialHomeRows.isNotEmpty()) {
+            if (isAlreadySuccess) {
+                val current = _uiState.value as MainScreenUiState.Success
+                _uiState.value = current.copy(
+                    continueWatching = continueWatchingList,
+                    nextUp = initialNextUp,
+                    watchedStates = initialWatchedMap
+                )
+            } else if (initialHomeRows.isNotEmpty()) {
                 _uiState.value = MainScreenUiState.Success(
                     configRows = initialHomeRows,
                     movieRows = emptyList(),
