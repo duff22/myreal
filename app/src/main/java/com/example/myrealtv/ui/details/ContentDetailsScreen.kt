@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -578,6 +579,10 @@ private fun SeriesSuccessContent(
         mutableStateOf(targetSeasonKey ?: uiState.seasons.firstOrNull() ?: "")
     }
 
+    var selectedEpisodeId by remember(selectedSeasonKey) {
+        mutableStateOf<String?>(null)
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         AsyncImage(
             model = uiState.backdropUrl,
@@ -834,7 +839,7 @@ private fun SeriesSuccessContent(
                             val isEpWatched = uiState.watchedStates["episode_${episode.streamId}"] == true || progressPercent >= 0.92f
 
                             val focusRequester = remember { FocusRequester() }
-                            val isTargetEp = episode.streamId == resolvedTargetEpId
+                            val isTargetEp = episode.streamId == (selectedEpisodeId ?: resolvedTargetEpId)
 
                             LaunchedEffect(isTargetEp) {
                                 if (isTargetEp) {
@@ -846,6 +851,11 @@ private fun SeriesSuccessContent(
                             Box(
                                 modifier = Modifier
                                     .focusRequester(focusRequester)
+                                    .onFocusChanged { state ->
+                                        if (state.isFocused) {
+                                            selectedEpisodeId = episode.streamId
+                                        }
+                                    }
                                     .width(220.dp)
                                     .height(165.dp)
                                     .combinedClickable(
