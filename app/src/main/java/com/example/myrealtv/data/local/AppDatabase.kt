@@ -18,7 +18,7 @@ interface PlaybackHistoryDao {
     @Query("SELECT * FROM playback_history WHERE userId = :userId ORDER BY updatedAt DESC")
     suspend fun getPlaybackHistory(userId: String): List<PlaybackHistory>
 
-    @Query("SELECT * FROM playback_history WHERE userId = :userId AND streamId = :streamId LIMIT 1")
+    @Query("SELECT * FROM playback_history WHERE userId = :userId AND streamId = :streamId AND isDismissed = 0 LIMIT 1")
     suspend fun getPlaybackHistoryForStream(userId: String, streamId: String): PlaybackHistory?
 
     @Query("SELECT * FROM playback_history WHERE userId = :userId AND lastPosition * 10 > totalDuration AND lastPosition * 100 < totalDuration * 95 AND isDismissed = 0 ORDER BY updatedAt DESC")

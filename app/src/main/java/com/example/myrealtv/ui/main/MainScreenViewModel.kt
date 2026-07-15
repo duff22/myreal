@@ -616,6 +616,19 @@ class MainScreenViewModel : ViewModel() {
 
                 val seriesEpHistory = seriesHistory.filter { it.seriesId == seriesId }.associateBy { it.streamId }
 
+                // Check if this series has ANY watch history
+                val hasAnyWatchHistory = allEpisodesWithSeason.any { ews ->
+                    val history = seriesEpHistory[ews.episode.streamId]
+                    val isWatched = updatedWatchedMap["episode_${ews.episode.streamId}"] == true ||
+                            (history?.let { it.lastPosition.toFloat() / it.totalDuration.toFloat() >= 0.92f } ?: false)
+                    val hasProgress = history?.let { it.lastPosition > 0 } ?: false
+                    isWatched || hasProgress
+                }
+
+                if (!hasAnyWatchHistory) {
+                    continue
+                }
+
                 var nextUpEp: EpisodeWithSeason? = null
                 
                 val partiallyWatchedEp = allEpisodesWithSeason.find { ews ->
@@ -643,6 +656,12 @@ class MainScreenViewModel : ViewModel() {
                 if (nextUpEp != null) {
                     val ext = nextUpEp.episode.container_extension ?: "mp4"
                     val playUrl = "${baseUrl}series/$username/$password/${nextUpEp.episode.streamId}.$ext"
+                    val epHistory = seriesEpHistory[nextUpEp.episode.streamId]
+                    val epProgress = if (epHistory != null && epHistory.totalDuration > 0) {
+                        epHistory.lastPosition.toFloat() / epHistory.totalDuration.toFloat()
+                    } else {
+                        null
+                    }
                     nextUpList.add(
                         ResolvedItem(
                             id = nextUpEp.episode.streamId,
@@ -651,7 +670,10 @@ class MainScreenViewModel : ViewModel() {
                             url = playUrl,
                             type = "series",
                             seriesId = seriesId,
-                            episodeNum = nextUpEp.episode.episodeNum
+                            episodeNum = nextUpEp.episode.episodeNum,
+                            progress = epProgress,
+                            lastPosition = epHistory?.lastPosition,
+                            totalDuration = epHistory?.totalDuration
                         )
                     )
                 }
